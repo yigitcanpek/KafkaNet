@@ -6,4 +6,8 @@ using KafkaProducer;
 
 string topicName = "use-case-1";
 
-await KafkService.CreateTopic(topicName);
+KafkService kafkService = new KafkService(topicName);
+await kafkService.CreateTopic();
+await kafkService.SendSimpleMessageWithNullKey();
+
+Console.WriteLine("mesajlar gönderilmiştir.");

@@ -8,11 +8,14 @@ using System.Threading.Tasks;
 
 namespace KafkaProducer
 {
-    public static class KafkService
+    public  class KafkService
     {
-        
-
-        public static async Task CreateTopic(string topicName)
+        private readonly string _topicname;
+        public KafkService(string topicName)
+        {
+            _topicname = topicName;
+        }
+        public  async Task CreateTopic()
         {
 
             using IAdminClient adminClient = new AdminClientBuilder(new AdminClientConfig()
@@ -23,14 +26,42 @@ namespace KafkaProducer
             {
                 await adminClient.CreateTopicsAsync(new[]
                 {
-            new TopicSpecification(){Name = topicName,NumPartitions=3,ReplicationFactor=1},
+            new TopicSpecification(){Name = _topicname,NumPartitions=3,ReplicationFactor=1},
         });
-                Console.WriteLine($"{topicName} has been created");
+                Console.WriteLine($"{_topicname} has been created");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 throw;
+            }
+        }
+
+        internal async Task SendSimpleMessageWithNullKey()
+        {
+            ProducerConfig config = new ProducerConfig()
+            {
+                BootstrapServers = "localhost:9094"
+            };
+            using IProducer<Null,string> producer = new ProducerBuilder<Null, string>(config).Build();
+            foreach (var item in Enumerable.Range(1, 10))
+            {
+                string messageContent = $"Message(use case -1) - {item}";
+
+                Message<Null, string> message = new Message<Null, string>()
+                {
+                    Value = messageContent,
+                };
+
+                DeliveryResult<Null,string> result = await producer.ProduceAsync(_topicname, message);
+
+                foreach (var propertyInfo in result.GetType().GetProperties())
+                {
+                    Console.WriteLine($"{propertyInfo.Name} : {propertyInfo.GetValue(result)}");
+                }
+
+                Console.WriteLine("----------------");
+                await Task.Delay(200);
             }
         }
     }
